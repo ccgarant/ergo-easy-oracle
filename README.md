@@ -118,3 +118,71 @@ If you wish to set a cron task to extract tokens you can use below command with 
 ```console
 @weekly docker compose -f /path/to/ergo-easy-oracle/docker-compose.yml exec -it core /bin/sh -c 'yes YES | oracle-core --oracle-config-file /data/oracle_config.yaml --pool-config-file /data/pool_config.yaml -d /data extract-reward-tokens ADDRESS_TO_EXTRACT_TO_HERE'
 ```
+-------
+
+# Optional: Setting Up a Systemd Service for Ergo Node Management
+To manage the Ergo Node Docker Compose setup with systemctl, which will run the docker service in the background, follow these steps:
+
+Create a systemd service file:
+
+```console
+sudo nano /etc/systemd/system/ergo-node.service
+```
+
+Add the following content to the file:
+
+```console
+[Unit]
+Description=Ergo Node Docker Compose Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/path/to/ergo-easy-oracle
+ExecStart=/usr/bin/docker compose up -d
+#ExecStart=/usr/bin/docker compose up -d core node # preferred if not running grafana and prometheus extras
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose restart
+RemainAfterExit=true
+TimeoutStopSec=300     # gives enough grace to safely reboot, shutdown, and startup
+Restart=on-failure
+RestartSec=10
+User=your_user_name
+Group=your_group_name
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Where:
+
+- /path/to/ergo-easy-oracle with the path to your cloned repository. (go to directory and use pwd)
+- your_user_name and your_group_name with the appropriate user and group.
+
+Save the file and reload systemd (ctrl+X, yes):
+
+```console
+sudo systemctl daemon-reload
+```
+
+Enable and start the service:
+
+```console
+sudo systemctl enable ergo-node.service
+sudo systemctl start ergo-node.service
+```
+
+Verify the service status:
+
+```console
+sudo systemctl status ergo-node.service
+```
+
+To stop the service:
+
+```console
+sudo systemctl stop ergo-node.service
+```
+
+This optional step simplifies the management of the Ergo Node, ensuring it restarts automatically and integrates with the system's boot process.
